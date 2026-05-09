@@ -24,7 +24,10 @@ jobs:
 
       - name: Publish
         run: dotnet publish SymbleSolver/SymbleSolver.csproj -c Release -o release
-
+        
+      - name: List release files
+        run: find release
+        
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
