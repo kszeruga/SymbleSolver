@@ -23,17 +23,80 @@ else
         <!-- RIGHT COLUMN -->
         <div class="col-right">
 
-            <!-- Guess History -->
-            @if (GameState.State.Guesses.Count > 0)
-            {
-                <div class="panel history-panel">
-                    <div class="panel-header">
-                        <span class="panel-title">Guess History</span>
+            <!-- Secret Answer + Guess History -->
+            <div class="panel history-panel">
+                <div class="panel-header">
+                    <span class="panel-title">
+                        @if (GameState.State.IsAutoGradeMode) { <text>Secret Answer & Guesses</text> }
+                        else { <text>Guess History</text> }
+                    </span>
+                    @if (GameState.State.Guesses.Count > 0)
+                    {
                         <button class="btn-ghost small icon-btn" @onclick="GameState.Reset">
-                            <Icon Name="refresh" Size="14" />
+                            <Icon Name="refresh" Size="14"/>
                             New Game
                         </button>
-                    </div>
+                    }
+                </div>
+
+                    @* Secret Answer Row — always first when in auto-grade mode *@
+                    @if (GameState.State.IsAutoGradeMode)
+                    {
+                        <div class="answer-row">
+                            <div class="answer-label">
+                                <Icon Name="lock" Size="16" />
+                                <span>Answer</span>
+                            </div>
+                            <div class="guess-cells">
+                                @for (int i = 0; i < 5; i++)
+                                {
+                                    <div class="guess-cell answer-cell">@GameState.State.SecretAnswer![i]</div>
+                                }
+                            </div>
+                            <button class="remove-btn" @onclick="DisableAutoGrade" title="Exit auto-grade mode">
+                                <Icon Name="unlock" Size="16" />
+                            </button>
+                        </div>
+                    }
+                    else if (showAnswerInput)
+                    {
+                        <div class="answer-row answer-input-row">
+                            <div class="answer-label">
+                                <Icon Name="unlock" Size="16" />
+                                <span>Answer</span>
+                            </div>
+                            <div class="guess-cells">
+                                @for (int i = 0; i < 5; i++)
+                                {
+                                    int pos = i;
+                                    <input class="guess-cell input-cell @(activeAnswerPos == pos ? "input-cell-active" : "")"
+                                           maxlength="1"
+                                           value="@(answerChars[pos] == '\0' ? "" : answerChars[pos].ToString())"
+                                           @oninput="e => OnAnswerLetterInput(pos, e.Value?.ToString())"
+                                           @onfocus="() => activeAnswerPos = pos"
+                                           @ref="answerRefs[pos]"
+                                           autocomplete="off"
+                                           spellcheck="false" />
+                                }
+                            </div>
+                            <button class="btn-ghost small" @onclick="ConfirmAnswer"
+                                    disabled="@(!CanConfirmAnswer)">
+                                Confirm
+                            </button>
+                        </div>
+                    }
+                    else if (!GameState.State.IsAutoGradeMode)
+                    {
+                        <div class="answer-prompt">
+                            <button class="btn-ghost" @onclick="ShowAnswerInput">
+                                <Icon Name="lock" Size="16" />
+                                Enter Secret Answer (optional)
+                            </button>
+                            <p class="hint-text">Enable auto-grade mode — guesses get feedback automatically.</p>
+                        </div>
+                    }
+
+                    @* Guess History Rows *@
                     @foreach (var (guess, idx) in GameState.State.Guesses.Select((g, i) => (g, i)))
                     {
                         <GuessRow GuessItem="guess"
@@ -42,7 +105,6 @@ else
                                   OnRemove="GameState.RemoveLastGuess" />
                     }
                 </div>
-            }
 
             <!-- Guess Input -->
             <GuessInput @ref="guessInput" />
@@ -56,6 +118,12 @@ else
 
 @code {
     private GuessInput? guessInput;
+    private bool showAnswerInput;
+    private char[] answerChars = new char[5];
+    private int activeAnswerPos;
+    private ElementReference[] answerRefs = new ElementReference[5];
+
+    private bool CanConfirmAnswer => answerChars.All(c => c != '\0');
 
     protected override async Task OnInitializedAsync()
     {
@@ -63,18 +131,53 @@ else
         await GameState.InitializeAsync();
     }
 
-    private void OnStateChanged()
+    private void OnStateChanged() => InvokeAsync(StateHasChanged);
+
+    private void FillGuessInput(string word) => guessInput?.FillWord(word);
+
+    private void ShowAnswerInput() => showAnswerInput = true;
+
+    private async Task OnAnswerLetterInput(int pos, string? value)
     {
-        InvokeAsync(StateHasChanged);
+        if (string.IsNullOrEmpty(value))
+        {
+            answerChars[pos] = '\0';
+            return;
+        }
+
+        char ch = char.ToUpperInvariant(value[^1]);
+        if (!char.IsLetter(ch)) return;
+
+        answerChars[pos] = ch;
+        if (pos < 4)
+        {
+            activeAnswerPos = pos + 1;
+            await answerRefs[pos + 1].FocusAsync();
+        }
     }
 
-    private void FillGuessInput(string word)
+    private void ConfirmAnswer()
     {
-        guessInput?.FillWord(word);
+        if (!CanConfirmAnswer) return;
+        try
+        {
+            var answer = new string(answerChars);
+            GameState.SetSecretAnswer(answer);
+            showAnswerInput = false;
+            answerChars = new char[5];
+        }
+        catch (ArgumentException)
+        {
+            // Invalid answer — could show validation message
+        }
     }
 
-    public void Dispose()
+    private void DisableAutoGrade()
     {
-        GameState.OnChanged -= OnStateChanged;
+        GameState.SetSecretAnswer(null);
+        showAnswerInput = false;
+        answerChars = new char[5];
     }
+
+    public void Dispose() => GameState.OnChanged -= OnStateChanged;
 }

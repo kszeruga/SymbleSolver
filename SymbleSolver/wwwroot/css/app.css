@@ -317,6 +317,42 @@ input.guess-cell.input-cell:focus { border-color: #fff; }
 .candidate-badge { background: rgba(83,141,78,.25); color: #6aae65; }
 .explorer-badge  { background: rgba(124,106,247,.18); color: var(--accent); }
 
+/* ?? Answer row (secret answer in history panel) ???????????????? */
+.answer-row {
+    display: flex; align-items: center; gap: .5rem;
+    padding: .5rem 0; border-bottom: 2px solid var(--accent);
+    margin-bottom: .5rem;
+}
+
+.answer-label {
+    display: flex; align-items: center; gap: .35rem;
+    font-size: .8rem; font-weight: 600; color: var(--accent);
+    min-width: 90px;
+}
+.answer-label .icon { color: var(--accent); }
+
+.answer-cell {
+    background: var(--accent-dim) !important;
+    border-color: var(--accent) !important;
+    color: #fff;
+    font-weight: 700;
+}
+
+.answer-input-row .guess-cells { flex: 1; }
+
+.answer-prompt {
+    display: flex; flex-direction: column; align-items: center;
+    gap: .5rem; padding: 1.5rem 1rem;
+    text-align: center;
+}
+.answer-prompt .hint-text {
+    font-size: .75rem; color: var(--text-muted);
+    margin: 0;
+}
+
+/* ?? Ranker toggle ??????????????????????????????????????????? */
+.ranker-toggle { display: flex; gap: .3rem; }
+
 /* ?? Ranker toggle (inside BestGuesses panel) ?????????????????? */
 .ranker-toggle { display: flex; gap: .3rem; margin-left: auto; }
 

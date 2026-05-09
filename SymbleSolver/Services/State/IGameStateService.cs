@@ -17,9 +17,12 @@ public interface IGameStateService
 
     Task InitializeAsync();
     void AddGuess(Guess guess);
+    void AddGuessWithWord(string word);   // auto-grade: generates feedback automatically
     void RemoveLastGuess();
     void UpdateSymbolMapping(SymbolMapping mapping);
     void SetSolverMode(SolverMode mode);
+    void SetRankerType(RankerType rankerType);
+    void SetSecretAnswer(string? answer);
     void Reset();
     IReadOnlySet<SymbolType> GetPossibleMeanings(int symbolIndex);
 }

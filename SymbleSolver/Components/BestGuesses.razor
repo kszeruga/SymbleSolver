@@ -7,7 +7,16 @@
 <div class="panel best-guess-panel">
     <div class="panel-header">
         <span class="panel-title">Best Next Guesses</span>
-        <span class="panel-subtitle">by entropy · min guesses</span>
+        <div class="ranker-toggle">
+            <button class="@RankerClass(RankerType.Entropy)" @onclick="() => SetRanker(RankerType.Entropy)"
+                    title="Maximize information gain (optimal strategy)">
+                Entropy
+            </button>
+            <button class="@RankerClass(RankerType.Frequency)" @onclick="() => SetRanker(RankerType.Frequency)"
+                    title="Maximize common letter coverage (fast)">
+                Frequency
+            </button>
+        </div>
     </div>
 
     @if (GameState.IsLoading)
@@ -59,4 +68,9 @@
 
     public void Dispose() =>
         GameState.OnChanged -= OnStateChanged;
+
+    private void SetRanker(RankerType type) => GameState.SetRankerType(type);
+
+    private string RankerClass(RankerType type) =>
+        GameState.State.RankerType == type ? "toggle-btn active" : "toggle-btn";
 }

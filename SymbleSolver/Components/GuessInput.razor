@@ -25,21 +25,24 @@
             }
         </div>
 
-        <div class="row-divider"></div>
+        @if (!GameState.State.IsAutoGradeMode)
+        {
+            <div class="row-divider"></div>
 
-        <div class="guess-symbols">
-            @for (int i = 0; i < 5; i++)
-            {
-                int pos = i;
-                int symIdx = feedbackSymbols[pos];
-                var sym = GameState.State.SymbolMapping.Symbols[symIdx];
-                <button class="sym-chip sym-btn @SymChipClass(symIdx)"
-                        @onclick="() => CycleSymbol(pos)"
-                        title="Click to cycle (symbol @(symIdx + 1) of 3)">
-                    @sym.Label
-                </button>
-            }
-        </div>
+            <div class="guess-symbols">
+                @for (int i = 0; i < 5; i++)
+                {
+                    int pos = i;
+                    int symIdx = feedbackSymbols[pos];
+                    var sym = GameState.State.SymbolMapping.Symbols[symIdx];
+                    <button class="sym-chip sym-btn @SymChipClass(symIdx)"
+                            @onclick="() => CycleSymbol(pos)"
+                            title="Click to cycle (symbol @(symIdx + 1) of 3)">
+                        @sym.Label
+                    </button>
+                }
+            </div>
+        }
     </div>
 
     @if (!string.IsNullOrEmpty(validationMessage))
@@ -99,7 +102,14 @@
             return;
         }
 
-        GameState.AddGuess(new Guess { Word = word, Feedback = (int[])feedbackSymbols.Clone() });
+        if (GameState.State.IsAutoGradeMode)
+        {
+            GameState.AddGuessWithWord(word);
+        }
+        else
+        {
+            GameState.AddGuess(new Guess { Word = word, Feedback = (int[])feedbackSymbols.Clone() });
+        }
         Clear();
     }
 
