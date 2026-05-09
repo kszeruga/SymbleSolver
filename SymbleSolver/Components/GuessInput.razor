@@ -101,12 +101,16 @@
             }
             // If current cell has content, let the browser handle it (will fire oninput)
         }
+        else if (e.Key == "Enter" && CanSubmit)
+        {
+            await Submit();
+        }
     }
 
     private void CycleSymbol(int pos) =>
         feedbackSymbols[pos] = (feedbackSymbols[pos] + 1) % 3;
 
-    private void Submit()
+    private async Task Submit()
     {
         if (!CanSubmit) return;
 
@@ -127,6 +131,11 @@
             GameState.AddGuess(new Guess { Word = word, Feedback = (int[])feedbackSymbols.Clone() });
         }
         Clear();
+
+        // Auto-focus the first input box for the next guess
+        await Task.Delay(50); // small delay for Blazor to update
+        if (letterRefs.Length > 0)
+            await letterRefs[0].FocusAsync();
     }
 
     private void Clear()

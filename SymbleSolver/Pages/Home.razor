@@ -27,7 +27,7 @@ else
             <div class="panel history-panel">
                 <div class="panel-header">
                     <span class="panel-title">
-                        @if (GameState.State.IsAutoGradeMode) { <text>Secret Answer & Guesses</text> }
+                        @if (GameState.State.IsAutoGradeMode) { <text>Answer & Guesses</text> }
                         else { <text>Guess History</text> }
                     </span>
                     @if (GameState.State.Guesses.Count > 0)
@@ -136,7 +136,17 @@ else
 
     private void FillGuessInput(string word) => guessInput?.FillWord(word);
 
-    private void ShowAnswerInput() => showAnswerInput = true;
+    private void ShowAnswerInput()
+    {
+        showAnswerInput = true;
+        // Focus the first answer input box after the UI updates
+        InvokeAsync(async () =>
+        {
+            await Task.Delay(50); // small delay for Blazor to render the inputs
+            if (answerRefs.Length > 0)
+                await answerRefs[0].FocusAsync();
+        });
+    }
 
     private async Task OnAnswerLetterInput(int pos, string? value)
     {
@@ -167,6 +177,10 @@ else
                 answerChars[pos - 1] = '\0';
                 await answerRefs[pos - 1].FocusAsync();
             }
+        }
+        else if (e.Key == "Enter" && CanConfirmAnswer)
+        {
+            ConfirmAnswer();
         }
     }
 

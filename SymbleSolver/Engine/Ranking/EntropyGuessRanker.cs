@@ -48,6 +48,15 @@ public sealed class EntropyGuessRanker : IGuessRanker
             return [new GuessRanking(candidates.First(),
                                      double.PositiveInfinity, true, "only candidate")];
 
+        // Special case: exactly 2 candidates.
+        // Any word that produces different feedback for the two will have entropy = 1 bit.
+        // Hundreds of dictionary words tie at 1.00 bits, flooding the results.
+        // Solution: just return the 2 candidates themselves — one of them is the answer.
+        if (candidates.Count == 2)
+        {
+            return candidates.Select(w => new GuessRanking(w, 1.0, true, "final two"));
+        }
+
         var candidateList = candidates as IList<string> ?? [.. candidates];
         var candidateSet  = candidates as IReadOnlySet<string>
                             ?? new HashSet<string>(candidates, StringComparer.Ordinal);
