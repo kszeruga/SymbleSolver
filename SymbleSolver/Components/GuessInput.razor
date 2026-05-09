@@ -18,6 +18,7 @@
                        maxlength="1"
                        value="@(wordChars[pos] == '\0' ? "" : wordChars[pos].ToString())"
                        @oninput="e => OnLetterInput(pos, e.Value?.ToString())"
+                       @onkeydown="e => OnKeyDown(pos, e)"
                        @onfocus="() => activePos = pos"
                        @ref="letterRefs[pos]"
                        autocomplete="off"
@@ -84,6 +85,21 @@
         {
             activePos = pos + 1;
             await letterRefs[pos + 1].FocusAsync();
+        }
+    }
+
+    private async Task OnKeyDown(int pos, KeyboardEventArgs e)
+    {
+        if (e.Key == "Backspace")
+        {
+            // If current cell is empty and we're not at the start, move back and clear
+            if (wordChars[pos] == '\0' && pos > 0)
+            {
+                activePos = pos - 1;
+                wordChars[pos - 1] = '\0';
+                await letterRefs[pos - 1].FocusAsync();
+            }
+            // If current cell has content, let the browser handle it (will fire oninput)
         }
     }
 

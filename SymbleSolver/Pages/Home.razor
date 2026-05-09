@@ -73,6 +73,7 @@ else
                                            maxlength="1"
                                            value="@(answerChars[pos] == '\0' ? "" : answerChars[pos].ToString())"
                                            @oninput="e => OnAnswerLetterInput(pos, e.Value?.ToString())"
+                                           @onkeydown="e => OnAnswerKeyDown(pos, e)"
                                            @onfocus="() => activeAnswerPos = pos"
                                            @ref="answerRefs[pos]"
                                            autocomplete="off"
@@ -153,6 +154,19 @@ else
         {
             activeAnswerPos = pos + 1;
             await answerRefs[pos + 1].FocusAsync();
+        }
+    }
+
+    private async Task OnAnswerKeyDown(int pos, KeyboardEventArgs e)
+    {
+        if (e.Key == "Backspace")
+        {
+            if (answerChars[pos] == '\0' && pos > 0)
+            {
+                activeAnswerPos = pos - 1;
+                answerChars[pos - 1] = '\0';
+                await answerRefs[pos - 1].FocusAsync();
+            }
         }
     }
 
