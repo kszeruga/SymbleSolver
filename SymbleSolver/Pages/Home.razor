@@ -1,0 +1,80 @@
+﻿@page "/"
+@inject IGameStateService GameState
+
+<PageTitle>SymbleSolver</PageTitle>
+
+@if (GameState.IsLoading)
+{
+    <div class="loading-screen">
+        <div class="loading-spinner"></div>
+        <p>Loading dictionary…</p>
+    </div>
+}
+else
+{
+    <div class="workspace">
+
+        <!-- LEFT COLUMN -->
+        <div class="col-left">
+            <SymbolMappingPanel />
+            <BestGuesses OnWordSelected="FillGuessInput" />
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="col-right">
+
+            <!-- Guess History -->
+            @if (GameState.State.Guesses.Count > 0)
+            {
+                <div class="panel history-panel">
+                    <div class="panel-header">
+                        <span class="panel-title">Guess History</span>
+                        <button class="btn-ghost small icon-btn" @onclick="GameState.Reset">
+                            <Icon Name="refresh" Size="14" />
+                            New Game
+                        </button>
+                    </div>
+                    @foreach (var (guess, idx) in GameState.State.Guesses.Select((g, i) => (g, i)))
+                    {
+                        <GuessRow GuessItem="guess"
+                                  Mapping="GameState.State.SymbolMapping"
+                                  ShowRemove="idx == GameState.State.Guesses.Count - 1"
+                                  OnRemove="GameState.RemoveLastGuess" />
+                    }
+                </div>
+            }
+
+            <!-- Guess Input -->
+            <GuessInput @ref="guessInput" />
+
+            <!-- Candidates -->
+            <CandidateList OnWordSelected="FillGuessInput" />
+
+        </div>
+    </div>
+}
+
+@code {
+    private GuessInput? guessInput;
+
+    protected override async Task OnInitializedAsync()
+    {
+        GameState.OnChanged += OnStateChanged;
+        await GameState.InitializeAsync();
+    }
+
+    private void OnStateChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void FillGuessInput(string word)
+    {
+        guessInput?.FillWord(word);
+    }
+
+    public void Dispose()
+    {
+        GameState.OnChanged -= OnStateChanged;
+    }
+}

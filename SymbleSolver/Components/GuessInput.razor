@@ -1,0 +1,133 @@
+@using SymbleSolver.Engine.Dictionary
+@using SymbleSolver.Services.State
+
+@inject IGameStateService GameState
+@inject IDictionaryService Dictionary
+
+<div class="panel guess-input-panel">
+    <div class="panel-header">
+        <span class="panel-title">Enter Guess</span>
+    </div>
+
+    <div class="guess-row input-guess-row">
+        <div class="guess-cells">
+            @for (int i = 0; i < 5; i++)
+            {
+                int pos = i;
+                <input class="guess-cell input-cell @(activePos == pos ? "input-cell-active" : "")"
+                       maxlength="1"
+                       value="@(wordChars[pos] == '\0' ? "" : wordChars[pos].ToString())"
+                       @oninput="e => OnLetterInput(pos, e.Value?.ToString())"
+                       @onfocus="() => activePos = pos"
+                       @ref="letterRefs[pos]"
+                       autocomplete="off"
+                       spellcheck="false" />
+            }
+        </div>
+
+        <div class="row-divider"></div>
+
+        <div class="guess-symbols">
+            @for (int i = 0; i < 5; i++)
+            {
+                int pos = i;
+                int symIdx = feedbackSymbols[pos];
+                var sym = GameState.State.SymbolMapping.Symbols[symIdx];
+                <button class="sym-chip sym-btn @SymChipClass(symIdx)"
+                        @onclick="() => CycleSymbol(pos)"
+                        title="Click to cycle (symbol @(symIdx + 1) of 3)">
+                    @sym.Label
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(validationMessage))
+    {
+        <div class="validation-msg">@validationMessage</div>
+    }
+
+    <div class="input-actions">
+        <button class="btn-primary" @onclick="Submit" disabled="@(!CanSubmit)">Add Guess</button>
+        <button class="btn-ghost"   @onclick="Clear">Clear</button>
+    </div>
+
+    <p class="hint-text">Click a symbol to cycle through the 3 options.</p>
+</div>
+
+@code {
+    private char[] wordChars = new char[5];
+    private int[] feedbackSymbols = new int[5];
+    private int activePos = 0;
+    private string validationMessage = "";
+    private ElementReference[] letterRefs = new ElementReference[5];
+
+    private bool CanSubmit => wordChars.All(c => c != '\0');
+
+    private async Task OnLetterInput(int pos, string? value)
+    {
+        validationMessage = "";
+        if (string.IsNullOrEmpty(value))
+        {
+            wordChars[pos] = '\0';
+            return;
+        }
+
+        char ch = char.ToUpperInvariant(value[^1]);
+        if (!char.IsLetter(ch)) return;
+
+        wordChars[pos] = ch;
+        if (pos < 4)
+        {
+            activePos = pos + 1;
+            await letterRefs[pos + 1].FocusAsync();
+        }
+    }
+
+    private void CycleSymbol(int pos) =>
+        feedbackSymbols[pos] = (feedbackSymbols[pos] + 1) % 3;
+
+    private void Submit()
+    {
+        if (!CanSubmit) return;
+
+        var word = new string(wordChars).ToUpperInvariant();
+
+        if (!Dictionary.IsValidWord(word))
+        {
+            validationMessage = $"\"{word}\" is not in the word list.";
+            return;
+        }
+
+        GameState.AddGuess(new Guess { Word = word, Feedback = (int[])feedbackSymbols.Clone() });
+        Clear();
+    }
+
+    private void Clear()
+    {
+        wordChars = new char[5];
+        feedbackSymbols = new int[5];
+        activePos = 0;
+        validationMessage = "";
+    }
+
+    public void FillWord(string word)
+    {
+        word = word.ToUpperInvariant();
+        for (int i = 0; i < 5 && i < word.Length; i++)
+            wordChars[i] = word[i];
+        StateHasChanged();
+    }
+
+    private string SymChipClass(int symIdx)
+    {
+        var meaning = GameState.State.SymbolMapping.GetMeaning(symIdx);
+        return meaning switch
+        {
+            SymbolType.Exact   => "sym-exact",
+            SymbolType.Present => "sym-present",
+            SymbolType.Absent  => "sym-absent",
+            _                  => $"sym-idx-{symIdx}"
+        };
+    }
+}

@@ -1,0 +1,71 @@
+@using SymbleSolver.Models
+@using SymbleSolver.Services.State
+
+@inject IGameStateService GameState
+@implements IDisposable
+
+<div class="panel candidate-panel">
+    <div class="panel-header">
+        <span class="panel-title">Possible Answers</span>
+        <span class="candidate-count @CountClass()">
+            @CandidateCount()
+        </span>
+    </div>
+
+    @if (GameState.IsLoading)
+    {
+        <div class="loading-msg">Loading dictionary…</div>
+    }
+    else if (GameState.State.Guesses.Count == 0)
+    {
+        <div class="no-candidates">
+            Enter your first guess to see possible answers.
+        </div>
+    }
+    else if (GameState.Candidates.Count == 0)
+    {
+        <div class="no-candidates">
+            No candidates match — check your symbol mapping or guesses.
+        </div>
+    }
+    else
+    {
+        <div class="candidate-list">
+            <Virtualize Items="@(GameState.Candidates.ToList())" OverscanCount="20" Context="word">
+                <div class="candidate-item" @onclick="() => OnWordSelected.InvokeAsync(word)">
+                    @word
+                </div>
+            </Virtualize>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public EventCallback<string> OnWordSelected { get; set; }
+
+    protected override void OnInitialized() =>
+        GameState.OnChanged += OnStateChanged;
+
+    private void OnStateChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() =>
+        GameState.OnChanged -= OnStateChanged;
+
+    private string CandidateCount()
+    {
+        if (GameState.IsLoading) return "…";
+        if (GameState.State.Guesses.Count == 0) return "";
+        var count = GameState.Candidates.Count;
+        return count == 0 ? "0" : $"{count:N0}";
+    }
+
+    private string CountClass()
+    {
+        if (GameState.State.Guesses.Count == 0) return "";
+        var count = GameState.Candidates.Count;
+        if (count == 0) return "count-zero";
+        if (count <= 5) return "count-few";
+        if (count <= 50) return "count-many";
+        return "count-all";
+    }
+}

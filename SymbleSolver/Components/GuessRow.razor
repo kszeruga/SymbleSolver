@@ -1,0 +1,55 @@
+@using SymbleSolver.Models
+
+<div class="guess-row">
+    <div class="guess-cells">
+        @for (int i = 0; i < 5; i++)
+        {
+            <div class="guess-cell">@(GuessItem.Word[i])</div>
+        }
+    </div>
+
+    <div class="row-divider"></div>
+
+    <div class="guess-symbols">
+        @for (int i = 0; i < 5; i++)
+        {
+            int symIdx = GuessItem.Feedback[i];
+            <div class="sym-chip @SymChipClass(symIdx)" title="@SymTitle(symIdx)">
+                @Mapping.Symbols[symIdx].Label
+            </div>
+        }
+    </div>
+
+    @if (ShowRemove)
+    {
+        <button class="remove-btn" @onclick="OnRemove" title="Remove this guess" aria-label="Remove guess">
+            <Icon Name="backspace" Size="18" />
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Guess GuessItem { get; set; } = default!;
+    [Parameter, EditorRequired] public SymbolMapping Mapping { get; set; } = default!;
+    [Parameter] public bool ShowRemove { get; set; }
+    [Parameter] public EventCallback OnRemove { get; set; }
+
+    private string SymChipClass(int symIdx)
+    {
+        var meaning = Mapping.GetMeaning(symIdx);
+        return meaning switch
+        {
+            SymbolType.Exact   => "sym-exact",
+            SymbolType.Present => "sym-present",
+            SymbolType.Absent  => "sym-absent",
+            _                  => $"sym-idx-{symIdx}"
+        };
+    }
+
+    private string SymTitle(int symIdx)
+    {
+        var meaning = Mapping.GetMeaning(symIdx);
+        var label = Mapping.Symbols[symIdx].Label;
+        return meaning.HasValue ? $"{label} = {meaning.Value}" : label;
+    }
+}

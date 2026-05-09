@@ -1,0 +1,155 @@
+@using SymbleSolver.Models
+@using SymbleSolver.Services.State
+
+@inject IGameStateService GameState
+@implements IDisposable
+
+<div class="panel mapping-panel">
+    <div class="panel-header">
+        <span class="panel-title">Symbol Configuration</span>
+        <div class="mode-toggle">
+            <button class="@ModeClass(SolverMode.MappingUnknown)" @onclick="() => SetMode(SolverMode.MappingUnknown)">
+                Auto-Infer
+            </button>
+            <button class="@ModeClass(SolverMode.MappingKnown)" @onclick="() => SetMode(SolverMode.MappingKnown)">
+                Manual
+            </button>
+        </div>
+    </div>
+
+    @if (GameState.State.SolverMode == SolverMode.MappingUnknown)
+    {
+        <p class="info-text">
+            Solver will try all 6 symbol interpretations simultaneously.
+            Enter guesses and the mapping will be inferred automatically.
+        </p>
+    }
+
+    <div class="symbol-rows">
+        @for (int i = 0; i < 3; i++)
+        {
+            int idx = i;
+            var sym = GameState.State.SymbolMapping.Symbols[idx];
+            <div class="symbol-row">
+                <input class="symbol-label-input"
+                       value="@sym.Label"
+                       @onchange="e => UpdateLabel(idx, e.Value?.ToString() ?? sym.Label)"
+                       title="Symbol label (emoji or text)" />
+                <Icon Name="arrow-right" Size="14" Class="symbol-arrow-icon" />
+                @if (GameState.State.SolverMode == SolverMode.MappingKnown)
+                {
+                    <select class="symbol-meaning-select"
+                            value="@MeaningValue(sym.MappedType)"
+                            @onchange="e => UpdateMeaning(idx, e.Value?.ToString())">
+                        <option value="">— unknown —</option>
+                        <option value="Exact">EXACT</option>
+                        <option value="Present">PRESENT</option>
+                        <option value="Absent">ABSENT</option>
+                    </select>
+                }
+                else
+                {
+                    <span class="symbol-inferred @InferredClass(idx)">
+                        @PossibleMeaningsText(idx)
+                    </span>
+                }
+            </div>
+        }
+    </div>
+
+    @if (GameState.State.SolverMode == SolverMode.MappingUnknown)
+    {
+        <div class="permutation-status">
+            <span class="perm-count @PermCountClass()">
+                @GameState.ViablePermutationCount / 6 interpretations viable
+            </span>
+            @if (GameState.IsMappingResolved)
+            {
+                <span class="perm-resolved">
+                    <Icon Name="check-circle" Size="14" />
+                    Mapping inferred!
+                </span>
+            }
+            @if (GameState.State.Guesses.Count > 0 && !GameState.IsMappingResolved)
+            {
+                <details class="perm-details">
+                    <summary>Show viable interpretations</summary>
+                    @foreach (var desc in GameState.ViablePermutationDescriptions)
+                    {
+                        <div class="perm-row">@desc</div>
+                    }
+                </details>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private void SetMode(SolverMode mode) => GameState.SetSolverMode(mode);
+
+    protected override void OnInitialized() =>
+        GameState.OnChanged += OnStateChanged;
+
+    private void OnStateChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() =>
+        GameState.OnChanged -= OnStateChanged;
+
+    private void UpdateLabel(int idx, string label)
+    {
+        var mapping = GameState.State.SymbolMapping.Clone();
+        mapping.Symbols[idx].Label = label;
+        GameState.UpdateSymbolMapping(mapping);
+    }
+
+    private void UpdateMeaning(int idx, string? value)
+    {
+        var mapping = GameState.State.SymbolMapping.Clone();
+        mapping.Symbols[idx].MappedType = value switch
+        {
+            "Exact"   => SymbolType.Exact,
+            "Present" => SymbolType.Present,
+            "Absent"  => SymbolType.Absent,
+            _         => null
+        };
+        GameState.UpdateSymbolMapping(mapping);
+    }
+
+    private string ModeClass(SolverMode mode) =>
+        GameState.State.SolverMode == mode ? "toggle-btn active" : "toggle-btn";
+
+    private static string MeaningValue(SymbolType? t) => t?.ToString() ?? "";
+
+    private string PossibleMeaningsText(int symbolIndex)
+    {
+        var possible = GameState.GetPossibleMeanings(symbolIndex);
+        return possible.Count switch
+        {
+            1 => possible.Single() switch
+            {
+                SymbolType.Exact   => "EXACT",
+                SymbolType.Present => "PRESENT",
+                SymbolType.Absent  => "ABSENT",
+                _                  => "?"
+            },
+            2 => string.Join(" / ", possible.OrderBy(t => (int)t)
+                                            .Select(t => t.ToString().ToUpper())),
+            _ => "?"    // all 3 still possible
+        };
+    }
+
+    private string InferredClass(int symbolIndex) =>
+        GameState.GetPossibleMeanings(symbolIndex).Count switch
+        {
+            1 => "inferred-certain",
+            2 => "inferred-partial",
+            _ => "inferred-unknown"
+        };
+
+    private string PermCountClass() => GameState.ViablePermutationCount switch
+    {
+        1 => "resolved",
+        2 => "almost",
+        _ => ""
+    };
+}

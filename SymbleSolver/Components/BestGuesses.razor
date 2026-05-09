@@ -1,0 +1,58 @@
+@using SymbleSolver.Models
+@using SymbleSolver.Services.State
+
+@inject IGameStateService GameState
+@implements IDisposable
+
+<div class="panel best-guess-panel">
+    <div class="panel-header">
+        <span class="panel-title">Best Next Guesses</span>
+        <span class="panel-subtitle">by letter frequency</span>
+    </div>
+
+    @if (GameState.IsLoading)
+    {
+        <div class="loading-msg">Computing…</div>
+    }
+    else if (!GameState.RankedGuesses.Any())
+    {
+        <div class="no-candidates">No suggestions available.</div>
+    }
+    else
+    {
+        <ol class="ranking-list">
+            @foreach (var (ranking, index) in GameState.RankedGuesses.Select((r, i) => (r, i)))
+            {
+                <li class="ranking-item @(ranking.IsCandidate ? "is-candidate" : "")">
+                    <span class="rank-num">@(index + 1)</span>
+                    <button class="rank-word" @onclick="() => OnWordSelected.InvokeAsync(ranking.Word)">
+                        @ranking.Word
+                    </button>
+                    <div class="rank-meta">
+                        <span class="rank-score">@ranking.Score.ToString("F0")</span>
+                        @if (ranking.IsCandidate)
+                        {
+                            <span class="rank-badge candidate-badge">answer</span>
+                        }
+                        else
+                        {
+                            <span class="rank-badge explorer-badge">explorer</span>
+                        }
+                    </div>
+                </li>
+            }
+        </ol>
+    }
+</div>
+
+@code {
+    [Parameter] public EventCallback<string> OnWordSelected { get; set; }
+
+    protected override void OnInitialized() =>
+        GameState.OnChanged += OnStateChanged;
+
+    private void OnStateChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() =>
+        GameState.OnChanged -= OnStateChanged;
+}
