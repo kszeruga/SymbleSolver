@@ -69,12 +69,19 @@ public class GameStateService : IGameStateService
         Notify();
     }
 
+    public void SetRankerType(RankerType type)
+    {
+        State.RankerType = type;
+        Recompute();
+        Notify();
+    }
+
     public void Reset()
     {
-        // Preserve symbol configuration when resetting game
-        var mapping = State.SymbolMapping.Clone();
-        var mode = State.SolverMode;
-        State = new GameState { SymbolMapping = mapping, SolverMode = mode };
+        var mapping    = State.SymbolMapping.Clone();
+        var mode       = State.SolverMode;
+        var rankerType = State.RankerType;
+        State = new GameState { SymbolMapping = mapping, SolverMode = mode, RankerType = rankerType };
         Recompute();
         Notify();
     }

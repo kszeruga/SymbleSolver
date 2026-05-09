@@ -20,6 +20,7 @@ public interface IGameStateService
     void RemoveLastGuess();
     void UpdateSymbolMapping(SymbolMapping mapping);
     void SetSolverMode(SolverMode mode);
+    void SetRankerType(RankerType type);
     void Reset();
     IReadOnlySet<SymbolType> GetPossibleMeanings(int symbolIndex);
 }

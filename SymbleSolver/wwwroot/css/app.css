@@ -317,6 +317,16 @@ input.guess-cell.input-cell:focus { border-color: #fff; }
 .candidate-badge { background: rgba(83,141,78,.25); color: #6aae65; }
 .explorer-badge  { background: rgba(124,106,247,.18); color: var(--accent); }
 
+/* ?? Ranker toggle (inside BestGuesses panel) ?????????????????? */
+.ranker-toggle { display: flex; gap: .3rem; margin-left: auto; }
+
+.ranker-description {
+    font-size: .73rem;
+    color: var(--text-muted);
+    margin-bottom: .6rem;
+    font-style: italic;
+}
+
 /* ?? Loading screen ?????????????????????????????????????????? */
 .loading-screen {
     display: flex; flex-direction: column; align-items: center;

@@ -20,7 +20,8 @@ builder.Services.AddSingleton<IDictionaryService>(_ => new DictionaryService(bas
 builder.Services.AddSingleton<IFeedbackEvaluator, FeedbackEvaluator>();
 builder.Services.AddSingleton<ICandidateFilter, CandidateFilter>();
 builder.Services.AddSingleton<MappingPermutationTracker>();
-builder.Services.AddSingleton<IGuessRanker, FrequencyGuessRanker>();
+builder.Services.AddSingleton<FrequencyGuessRanker>();
+builder.Services.AddSingleton<EntropyGuessRanker>();
 builder.Services.AddSingleton<ISolverEngine, SolverEngine>();
 
 // State
