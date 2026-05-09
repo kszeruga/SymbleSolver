@@ -11,21 +11,18 @@ public class SolverEngine : ISolverEngine
     private readonly IDictionaryService _dictionary;
     private readonly ICandidateFilter _filter;
     private readonly MappingPermutationTracker _permTracker;
-    private readonly EntropyGuessRanker _entropyRanker;
-    private readonly FrequencyGuessRanker _frequencyRanker;
+    private readonly IGuessRanker _ranker;
 
     public SolverEngine(
         IDictionaryService dictionary,
         ICandidateFilter filter,
         MappingPermutationTracker permTracker,
-        EntropyGuessRanker entropyRanker,
-        FrequencyGuessRanker frequencyRanker)
+        IGuessRanker ranker)
     {
-        _dictionary       = dictionary;
-        _filter           = filter;
-        _permTracker      = permTracker;
-        _entropyRanker    = entropyRanker;
-        _frequencyRanker  = frequencyRanker;
+        _dictionary = dictionary;
+        _filter = filter;
+        _permTracker = permTracker;
+        _ranker = ranker;
     }
 
     public IReadOnlyList<string> Candidates { get; private set; } = [];
@@ -52,10 +49,10 @@ public class SolverEngine : ISolverEngine
         if (guesses.Count == 0)
         {
             _permTracker.Reset(labels);
-            Candidates = [];
+            Candidates = [];   // nothing filtered yet — UI shows a prompt instead
 
-            var openersRanker = Pick(state.RankerType);
-            RankedGuesses = [.. openersRanker.Rank(answerWords, allWords, 10)];
+            // Rank using the full answer set so Best Next Guesses shows good openers
+            RankedGuesses = [.. _ranker.Rank(answerWords, allWords, 10)];
             return;
         }
         else if (state.SolverMode == SolverMode.MappingUnknown)
@@ -69,11 +66,8 @@ public class SolverEngine : ISolverEngine
             Candidates = [.. _filter.Filter(answerWords, guesses, state.SymbolMapping).OrderBy(w => w)];
         }
 
-        RankedGuesses = [.. Pick(state.RankerType).Rank(Candidates, allWords, 10)];
+        RankedGuesses = [.. _ranker.Rank(Candidates, allWords, 10)];
     }
-
-    private IGuessRanker Pick(RankerType type) =>
-        type == RankerType.Entropy ? _entropyRanker : _frequencyRanker;
 
     public IReadOnlySet<SymbolType> GetPossibleMeanings(int symbolIndex) =>
         _permTracker.GetPossibleMeanings(symbolIndex);

@@ -1,4 +1,4 @@
-@using SymbleSolver.Models
+ï»¿@using SymbleSolver.Models
 @using SymbleSolver.Services.State
 
 @inject IGameStateService GameState
@@ -7,34 +7,12 @@
 <div class="panel best-guess-panel">
     <div class="panel-header">
         <span class="panel-title">Best Next Guesses</span>
-        <div class="ranker-toggle">
-            <button class="@RankerClass(RankerType.Entropy)"
-                    @onclick="() => GameState.SetRankerType(RankerType.Entropy)"
-                    title="Entropy — minimises expected guesses">
-                Entropy
-            </button>
-            <button class="@RankerClass(RankerType.Frequency)"
-                    @onclick="() => GameState.SetRankerType(RankerType.Frequency)"
-                    title="Letter frequency — fast heuristic">
-                Frequency
-            </button>
-        </div>
-    </div>
-
-    <div class="ranker-description">
-        @if (GameState.State.RankerType == RankerType.Entropy)
-        {
-            <span>Maximises information gained per guess (bits)</span>
-        }
-        else
-        {
-            <span>Favours letters most common in remaining words</span>
-        }
+        <span class="panel-subtitle">by entropy Â· min guesses</span>
     </div>
 
     @if (GameState.IsLoading)
     {
-        <div class="loading-msg">Computing…</div>
+        <div class="loading-msg">Computingâ€¦</div>
     }
     else if (!GameState.RankedGuesses.Any())
     {
@@ -51,8 +29,10 @@
                         @ranking.Word
                     </button>
                     <div class="rank-meta">
-                        <span class="rank-score" title="@ScoreTitle">
-                            @FormatScore(ranking.Score)
+                        <span class="rank-score" title="Expected information gain">
+                            @(double.IsPositiveInfinity(ranking.Score)
+                                ? "âˆž"
+                                : $"{ranking.Score:F2} bits")
                         </span>
                         @if (ranking.IsCandidate)
                         {
@@ -79,16 +59,4 @@
 
     public void Dispose() =>
         GameState.OnChanged -= OnStateChanged;
-
-    private string RankerClass(RankerType type) =>
-        GameState.State.RankerType == type ? "toggle-btn active" : "toggle-btn";
-
-    private string ScoreTitle => GameState.State.RankerType == RankerType.Entropy
-        ? "Expected information gain (bits)"
-        : "Letter frequency score";
-
-    private string FormatScore(double score) =>
-        double.IsPositiveInfinity(score) ? "?"
-        : GameState.State.RankerType == RankerType.Entropy ? $"{score:F2} bits"
-        : $"{score:F0}";
 }
