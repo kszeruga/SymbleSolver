@@ -23,12 +23,12 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Publish
-        run: dotnet publish -c Release
+        run: dotnet publish SymbleSolver/SymbleSolver.csproj -c Release -o release
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: bin/Release/net8.0/publish/wwwroot
+          path: release/wwwroot
 
   deploy:
     environment:
