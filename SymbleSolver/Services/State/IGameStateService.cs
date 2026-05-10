@@ -14,15 +14,16 @@ public interface IGameStateService
     bool IsMappingResolved { get; }
     SymbolMapping? InferredMapping { get; }
     bool IsLoading { get; }
+    bool IsComputing { get; }
 
     Task InitializeAsync();
-    void AddGuess(Guess guess);
-    void AddGuessWithWord(string word);   // auto-grade: generates feedback automatically
-    void RemoveLastGuess();
-    void UpdateSymbolMapping(SymbolMapping mapping);
-    void SetSolverMode(SolverMode mode);
-    void SetRankerType(RankerType rankerType);
-    void SetSecretAnswer(string? answer);
-    void Reset();
+    Task AddGuessAsync(Guess guess);
+    Task AddGuessWithWordAsync(string word);   // auto-grade: generates feedback automatically
+    Task RemoveLastGuessAsync();
+    Task UpdateSymbolMappingAsync(SymbolMapping mapping);
+    Task SetSolverModeAsync(SolverMode mode);
+    Task SetRankerTypeAsync(RankerType rankerType);
+    Task SetSecretAnswerAsync(string? answer);
+    Task ResetAsync();
     IReadOnlySet<SymbolType> GetPossibleMeanings(int symbolIndex);
 }

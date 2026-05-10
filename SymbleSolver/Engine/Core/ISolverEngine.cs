@@ -17,5 +17,11 @@ public interface ISolverEngine
     /// </summary>
     IReadOnlySet<SymbolType> GetPossibleMeanings(int symbolIndex);
 
+    /// <summary>
+    /// Precomputes and caches the initial best guesses for both ranker types.
+    /// Should be called once after the dictionary is loaded.
+    /// </summary>
+    void PrecomputeInitialGuesses();
+
     void Recompute(GameState state);
 }

@@ -41,7 +41,7 @@
                     <select class="symbol-meaning-select"
                             value="@MeaningValue(sym.MappedType)"
                             @onchange="e => UpdateMeaning(idx, e.Value?.ToString())">
-                        <option value="">— unknown —</option>
+                        <option value="">- unknown -</option>
                         <option value="Exact">EXACT</option>
                         <option value="Present">PRESENT</option>
                         <option value="Absent">ABSENT</option>
@@ -85,7 +85,7 @@
 </div>
 
 @code {
-    private void SetMode(SolverMode mode) => GameState.SetSolverMode(mode);
+    private async Task SetMode(SolverMode mode) => await GameState.SetSolverModeAsync(mode);
 
     protected override void OnInitialized() =>
         GameState.OnChanged += OnStateChanged;
@@ -95,14 +95,14 @@
     public void Dispose() =>
         GameState.OnChanged -= OnStateChanged;
 
-    private void UpdateLabel(int idx, string label)
+    private async Task UpdateLabel(int idx, string label)
     {
         var mapping = GameState.State.SymbolMapping.Clone();
         mapping.Symbols[idx].Label = label;
-        GameState.UpdateSymbolMapping(mapping);
+        await GameState.UpdateSymbolMappingAsync(mapping);
     }
 
-    private void UpdateMeaning(int idx, string? value)
+    private async Task UpdateMeaning(int idx, string? value)
     {
         var mapping = GameState.State.SymbolMapping.Clone();
         mapping.Symbols[idx].MappedType = value switch
@@ -112,7 +112,7 @@
             "Absent"  => SymbolType.Absent,
             _         => null
         };
-        GameState.UpdateSymbolMapping(mapping);
+        await GameState.UpdateSymbolMappingAsync(mapping);
     }
 
     private string ModeClass(SolverMode mode) =>

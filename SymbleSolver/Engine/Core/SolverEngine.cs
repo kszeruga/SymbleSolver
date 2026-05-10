@@ -14,6 +14,10 @@ public class SolverEngine : ISolverEngine
     private readonly EntropyGuessRanker _entropyRanker;
     private readonly FrequencyGuessRanker _frequencyRanker;
 
+    // Cached initial guesses (computed once after dictionary load)
+    private IReadOnlyList<GuessRanking>? _cachedEntropyOpeners;
+    private IReadOnlyList<GuessRanking>? _cachedFrequencyOpeners;
+
     public SolverEngine(
         IDictionaryService dictionary,
         ICandidateFilter filter,
@@ -35,6 +39,17 @@ public class SolverEngine : ISolverEngine
     public bool IsMappingResolved => _permTracker.IsResolved;
     public SymbolMapping? InferredMapping => _permTracker.GetResolvedMapping();
 
+    public void PrecomputeInitialGuesses()
+    {
+        if (!_dictionary.IsLoaded) return;
+
+        var answerWords = _dictionary.AnswerWords;
+        var allWords = _dictionary.Words;
+
+        _cachedEntropyOpeners = [.. _entropyRanker.Rank(answerWords, allWords, 10)];
+        _cachedFrequencyOpeners = [.. _frequencyRanker.Rank(answerWords, allWords, 10)];
+    }
+
     public void Recompute(GameState state)
     {
         if (!_dictionary.IsLoaded)
@@ -44,8 +59,8 @@ public class SolverEngine : ISolverEngine
             return;
         }
 
-        var answerWords = _dictionary.AnswerWords; // candidates must come from here
-        var allWords    = _dictionary.Words;        // full set — valid for guesses & ranker pool
+        var answerWords = _dictionary.AnswerWords;
+        var allWords    = _dictionary.Words;
         var guesses     = state.Guesses;
         var labels      = state.SymbolMapping.Symbols.Select(s => s.Label).ToArray();
 
@@ -54,8 +69,21 @@ public class SolverEngine : ISolverEngine
             _permTracker.Reset(labels);
             Candidates = [];
 
-            var ranker = SelectRanker(state.RankerType);
-            RankedGuesses = [.. ranker.Rank(answerWords, allWords, 10)];
+            // Serve cached initial guesses instantly
+            var cached = state.RankerType == RankerType.Entropy
+                ? _cachedEntropyOpeners
+                : _cachedFrequencyOpeners;
+
+            if (cached != null)
+            {
+                RankedGuesses = cached;
+            }
+            else
+            {
+                // Fallback: compute on the fly if cache isn't ready yet
+                var ranker = SelectRanker(state.RankerType);
+                RankedGuesses = [.. ranker.Rank(answerWords, allWords, 10)];
+            }
             return;
         }
         else if (state.SolverMode == SolverMode.MappingUnknown)

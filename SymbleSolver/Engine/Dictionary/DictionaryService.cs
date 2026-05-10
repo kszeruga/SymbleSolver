@@ -15,6 +15,7 @@ public class DictionaryService : IDictionaryService
     private readonly string _baseAddress;
     private HashSet<string> _words       = [];
     private HashSet<string> _answerWords = [];
+    private readonly SemaphoreSlim _loadLock = new(1, 1);
 
     public DictionaryService(string baseAddress) => _baseAddress = baseAddress;
 
@@ -26,22 +27,32 @@ public class DictionaryService : IDictionaryService
     {
         if (IsLoaded) return;
 
-        using var http = new HttpClient { BaseAddress = new Uri(_baseAddress) };
-        var text = await http.GetStringAsync("data/word_list.txt");
+        await _loadLock.WaitAsync();
+        try
+        {
+            if (IsLoaded) return; // double-check after acquiring lock
 
-        _words = text
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-            .Select(w => w.Trim().ToUpperInvariant())
-            .Where(w => w.Length == 5 && w.All(char.IsLetter))
-            .ToHashSet(StringComparer.Ordinal);
+            using var http = new HttpClient { BaseAddress = new Uri(_baseAddress) };
+            var text = await http.GetStringAsync("data/word_list.txt");
 
-        // Answer candidates = all words that don't end in S,
-        // plus the explicitly whitelisted S-ending words.
-        _answerWords = _words
-            .Where(w => !w.EndsWith('S') || SEndingAnswerWhitelist.Contains(w))
-            .ToHashSet(StringComparer.Ordinal);
+            _words = text
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(w => w.Trim().ToUpperInvariant())
+                .Where(w => w.Length == 5 && w.All(char.IsLetter))
+                .ToHashSet(StringComparer.Ordinal);
 
-        IsLoaded = true;
+            // Answer candidates = all words that don't end in S,
+            // plus the explicitly whitelisted S-ending words.
+            _answerWords = _words
+                .Where(w => !w.EndsWith('S') || SEndingAnswerWhitelist.Contains(w))
+                .ToHashSet(StringComparer.Ordinal);
+
+            IsLoaded = true;
+        }
+        finally
+        {
+            _loadLock.Release();
+        }
     }
 
     public bool IsValidWord(string word) =>

@@ -1,5 +1,6 @@
 ﻿@page "/"
 @inject IGameStateService GameState
+@implements IDisposable
 
 <PageTitle>SymbleSolver</PageTitle>
 
@@ -12,6 +13,11 @@
 }
 else
 {
+    @if (GameState.IsComputing)
+    {
+        <div class="computing-overlay"></div>
+    }
+
     <div class="workspace">
 
         <!-- LEFT COLUMN -->
@@ -32,7 +38,7 @@ else
                     </span>
                     @if (GameState.State.Guesses.Count > 0)
                     {
-                        <button class="btn-ghost small icon-btn" @onclick="GameState.Reset">
+                        <button class="btn-ghost small icon-btn" @onclick="GameState.ResetAsync">
                             <Icon Name="refresh" Size="14"/>
                             New Game
                         </button>
@@ -103,7 +109,7 @@ else
                         <GuessRow GuessItem="guess"
                                   Mapping="GameState.State.SymbolMapping"
                                   ShowRemove="idx == GameState.State.Guesses.Count - 1"
-                                  OnRemove="GameState.RemoveLastGuess" />
+                                  OnRemove="GameState.RemoveLastGuessAsync" />
                     }
                 </div>
 
@@ -180,17 +186,17 @@ else
         }
         else if (e.Key == "Enter" && CanConfirmAnswer)
         {
-            ConfirmAnswer();
+            await ConfirmAnswer();
         }
     }
 
-    private void ConfirmAnswer()
+    private async Task ConfirmAnswer()
     {
         if (!CanConfirmAnswer) return;
         try
         {
             var answer = new string(answerChars);
-            GameState.SetSecretAnswer(answer);
+            await GameState.SetSecretAnswerAsync(answer);
             showAnswerInput = false;
             answerChars = new char[5];
         }
@@ -200,9 +206,9 @@ else
         }
     }
 
-    private void DisableAutoGrade()
+    private async Task DisableAutoGrade()
     {
-        GameState.SetSecretAnswer(null);
+        await GameState.SetSecretAnswerAsync(null);
         showAnswerInput = false;
         answerChars = new char[5];
     }

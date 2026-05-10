@@ -19,7 +19,7 @@
         </div>
     </div>
 
-    @if (GameState.IsLoading)
+    @if (GameState.IsLoading || GameState.IsComputing)
     {
         <div class="loading-msg">Computing…</div>
     }
@@ -69,7 +69,7 @@
     public void Dispose() =>
         GameState.OnChanged -= OnStateChanged;
 
-    private void SetRanker(RankerType type) => GameState.SetRankerType(type);
+    private async Task SetRanker(RankerType type) => await GameState.SetRankerTypeAsync(type);
 
     private string RankerClass(RankerType type) =>
         GameState.State.RankerType == type ? "toggle-btn active" : "toggle-btn";

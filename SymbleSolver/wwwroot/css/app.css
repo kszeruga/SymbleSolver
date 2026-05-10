@@ -143,7 +143,7 @@ html, body {
 .guess-cell {
     width: 46px; height: 46px;
     display: flex; align-items: center; justify-content: center;
-    background: var(--absent);        /* neutral dark � no semantic colour */
+    background: var(--absent);        /* neutral dark � no semantic colour */
     border: 2px solid #55556a;
     border-radius: 4px;
     font-size: 1.1rem; font-weight: 700; color: var(--text);
@@ -162,7 +162,7 @@ html, body {
 /* 5 symbol chips */
 .guess-symbols { display: flex; gap: .35rem; }
 
-/* ?? Symbol chip � base ???????????????????????????????????????? */
+/* ?? Symbol chip � base ???????????????????????????????????????? */
 .sym-chip {
     width: 38px; height: 38px;
     border-radius: 50%;
@@ -179,12 +179,12 @@ button.sym-btn {
 }
 button.sym-btn:hover  { filter: brightness(1.25); transform: scale(1.08); }
 
-/* semantic colours � applied once meaning is known */
+/* semantic colours � applied once meaning is known */
 .sym-chip.sym-exact   { background: var(--exact);   border-color: #6aae65; }
 .sym-chip.sym-present { background: var(--present); border-color: #d4b84a; }
 .sym-chip.sym-absent  { background: var(--absent);  border-color: #55556a; }
 
-/* index colours � used while meaning is still ambiguous */
+/* index colours � used while meaning is still ambiguous */
 .sym-chip.sym-idx-0 { background: #1a4a6b; border-color: #2d7ab5; }  /* blue   */
 .sym-chip.sym-idx-1 { background: #4a3a00; border-color: #b8960a; }  /* amber  */
 .sym-chip.sym-idx-2 { background: #3a1a4a; border-color: #9b4dca; }  /* purple */
@@ -259,7 +259,7 @@ input.guess-cell.input-cell:focus { border-color: #fff; }
     max-height: 300px;
     overflow-y: auto;
     /* auto-fill columns: each word badge is at least 72 px wide,
-       extras stretch to fill the row � no flex-wrap spacer problem */
+       extras stretch to fill the row � no flex-wrap spacer problem */
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
     gap: .3rem;
@@ -284,7 +284,6 @@ input.guess-cell.input-cell:focus { border-color: #fff; }
 .candidate-item:hover { border-color: var(--accent); color: var(--accent); }
 
 .no-candidates { font-size: .85rem; color: var(--text-muted); padding: .5rem 0; }
-.loading-msg   { font-size: .85rem; color: var(--text-muted); padding: .5rem 0; }
 
 .candidate-overflow-note {
     font-size: .75rem;
@@ -364,7 +363,7 @@ input.guess-cell.input-cell:focus { border-color: #fff; }
     font-style: italic;
 }
 
-/* ?? Loading screen ?????????????????????????????????????????? */
+/* ── Loading screen ─────────────────────────────────────────── */
 .loading-screen {
     display: flex; flex-direction: column; align-items: center;
     justify-content: center; height: 60vh; gap: 1rem; color: var(--text-muted);
@@ -375,6 +374,35 @@ input.guess-cell.input-cell:focus { border-color: #fff; }
     animation: spin .8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Computing indicator ───────────────────────────────────── */
+.computing-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    background-size: 200% 100%;
+    animation: computing-slide 1.2s ease-in-out infinite;
+    z-index: 200;
+}
+@keyframes computing-slide {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.loading-msg {
+    font-size: .85rem; color: var(--text-muted); padding: .5rem 0;
+    display: flex; align-items: center; gap: .5rem;
+}
+.loading-msg::before {
+    content: '';
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    flex-shrink: 0;
+}
 
 /* ?? Blazor error UI ????????????????????????????????????????? */
 #blazor-error-ui {

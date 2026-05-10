@@ -21,6 +21,7 @@ public class GameStateService : IGameStateService
     public bool IsMappingResolved => _solver.IsMappingResolved;
     public SymbolMapping? InferredMapping => _solver.InferredMapping;
     public bool IsLoading { get; private set; }
+    public bool IsComputing { get; private set; }
 
     public GameStateService(IDictionaryService dictionary, ISolverEngine solver, IFeedbackEvaluator evaluator)
     {
@@ -35,20 +36,22 @@ public class GameStateService : IGameStateService
         Notify();
 
         await _dictionary.LoadAsync();
-        Recompute();
+
+        // Precompute initial best guesses while still showing loading state.
+        // This is the expensive part — runs entropy over the full dictionary once.
+        _solver.PrecomputeInitialGuesses();
 
         IsLoading = false;
-        Notify();
+        await RecomputeAsync();
     }
 
-    public void AddGuess(Guess guess)
+    public async Task AddGuessAsync(Guess guess)
     {
         State.Guesses.Add(guess);
-        Recompute();
-        Notify();
+        await RecomputeAsync();
     }
 
-    public void AddGuessWithWord(string word)
+    public async Task AddGuessWithWordAsync(string word)
     {
         if (!State.IsAutoGradeMode || State.SecretAnswer == null)
             throw new InvalidOperationException("Auto-grade mode not active");
@@ -59,41 +62,37 @@ public class GameStateService : IGameStateService
         for (int i = 0; i < 5; i++)
             feedbackIndices[i] = Array.IndexOf(State.SecretSymbolAssignment!, (int)feedback[i]);
 
-        AddGuess(new Guess { Word = word, Feedback = feedbackIndices });
+        await AddGuessAsync(new Guess { Word = word, Feedback = feedbackIndices });
     }
 
-    public void RemoveLastGuess()
+    public async Task RemoveLastGuessAsync()
     {
         if (State.Guesses.Count > 0)
         {
             State.Guesses.RemoveAt(State.Guesses.Count - 1);
-            Recompute();
-            Notify();
+            await RecomputeAsync();
         }
     }
 
-    public void UpdateSymbolMapping(SymbolMapping mapping)
+    public async Task UpdateSymbolMappingAsync(SymbolMapping mapping)
     {
         State.SymbolMapping = mapping;
-        Recompute();
-        Notify();
+        await RecomputeAsync();
     }
 
-    public void SetSolverMode(SolverMode mode)
+    public async Task SetSolverModeAsync(SolverMode mode)
     {
         State.SolverMode = mode;
-        Recompute();
-        Notify();
+        await RecomputeAsync();
     }
 
-    public void SetRankerType(RankerType rankerType)
+    public async Task SetRankerTypeAsync(RankerType rankerType)
     {
         State.RankerType = rankerType;
-        Recompute();
-        Notify();
+        await RecomputeAsync();
     }
 
-    public void SetSecretAnswer(string? answer)
+    public async Task SetSecretAnswerAsync(string? answer)
     {
         if (string.IsNullOrWhiteSpace(answer))
         {
@@ -116,10 +115,10 @@ public class GameStateService : IGameStateService
                     (State.SecretSymbolAssignment[j], State.SecretSymbolAssignment[i]);
             }
         }
-        Notify();
+        await RecomputeAsync();
     }
 
-    public void Reset()
+    public async Task ResetAsync()
     {
         var mapping = State.SymbolMapping.Clone();
         var mode = State.SolverMode;
@@ -130,11 +129,27 @@ public class GameStateService : IGameStateService
             SolverMode = mode,
             RankerType = rankerType
         };
-        Recompute();
+        await RecomputeAsync();
+    }
+
+    /// <summary>
+    /// Yields to the UI thread so the "Computing…" indicator renders,
+    /// then performs the heavy solver work synchronously.
+    /// </summary>
+    private async Task RecomputeAsync()
+    {
+        IsComputing = true;
+        Notify();
+
+        // Yield so Blazor can render the computing state before we block.
+        await Task.Delay(1);
+
+        _solver.Recompute(State);
+
+        IsComputing = false;
         Notify();
     }
 
-    private void Recompute() => _solver.Recompute(State);
     private void Notify() => OnChanged?.Invoke();
 
     public IReadOnlySet<SymbolType> GetPossibleMeanings(int symbolIndex) =>

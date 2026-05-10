@@ -124,11 +124,11 @@
 
         if (GameState.State.IsAutoGradeMode)
         {
-            GameState.AddGuessWithWord(word);
+            await GameState.AddGuessWithWordAsync(word);
         }
         else
         {
-            GameState.AddGuess(new Guess { Word = word, Feedback = (int[])feedbackSymbols.Clone() });
+            await GameState.AddGuessAsync(new Guess { Word = word, Feedback = (int[])feedbackSymbols.Clone() });
         }
         Clear();
 
